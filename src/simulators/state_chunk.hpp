@@ -51,7 +51,7 @@ public:
   using BaseState = State<state_t>;
   using DataSubType = Operations::DataSubType;
   using OpType = Operations::OpType;
-  using OpItr = std::vector<Operations::Op>::const_iterator;
+  using OpItr = Operations::opVector::const_iterator;
 
   //-----------------------------------------------------------------------
   // Constructors
@@ -136,7 +136,7 @@ public:
   // specified sequence of operations on a `num_qubit` sized StateChunk.
   virtual size_t
   required_memory_mb(uint_t num_qubits,
-                     const std::vector<Operations::Op> &ops) const = 0;
+                     const Operations::opVector &ops) const = 0;
 
   // memory allocation (previously called before inisitalize_qreg)
   virtual bool allocate(uint_t num_qubits, uint_t block_bits,
@@ -352,7 +352,7 @@ protected:
   // apply sampled noise to multiple-shots (this is used for ops contains
   // non-Pauli operators)
   void apply_batched_noise_ops(
-      const int_t i_group, const std::vector<std::vector<Operations::Op>> &ops,
+      const int_t i_group, const std::vector<Operations::opVector> &ops,
       ExperimentResult &result, std::vector<RngEngine> &rng);
 
   // check conditional
@@ -1012,10 +1012,10 @@ void StateChunk<state_t>::apply_ops_multi_shots_for_group(
         rng_seed + global_chunk_index_ + local_shot_index_ + j);
 
   for (auto op = first; op != last; ++op) {
-    if (op->type == Operations::OpType::qerror_loc) {
+    if ((*op)->type == Operations::OpType::qerror_loc) {
       // sample error here
       uint_t count = num_chunks_in_group_[i_group];
-      std::vector<std::vector<Operations::Op>> noise_ops(count);
+      std::vector<Operations::opVector> noise_ops(count);
 
       uint_t count_ops = 0;
       uint_t non_pauli_gate_count = 0;
@@ -1025,12 +1025,12 @@ void StateChunk<state_t>::apply_ops_multi_shots_for_group(
           noise_ops[j] = noise.sample_noise_loc(*op, rng[j]);
 
           if (!(noise_ops[j].size() == 0 ||
-                (noise_ops[j].size() == 1 && noise_ops[j][0].name == "id"))) {
+                (noise_ops[j].size() == 1 && noise_ops[j][0]->name == "id"))) {
             count_ops++;
             for (int_t k = 0; k < noise_ops[j].size(); k++) {
-              if (noise_ops[j][k].name != "id" && noise_ops[j][k].name != "x" &&
-                  noise_ops[j][k].name != "y" && noise_ops[j][k].name != "z" &&
-                  noise_ops[j][k].name != "pauli") {
+              if (noise_ops[j][k]->name != "id" && noise_ops[j][k]->name != "x" &&
+                  noise_ops[j][k]->name != "y" && noise_ops[j][k]->name != "z" &&
+                  noise_ops[j][k]->name != "pauli") {
                 non_pauli_gate_count++;
                 break;
               }
@@ -1042,12 +1042,12 @@ void StateChunk<state_t>::apply_ops_multi_shots_for_group(
           noise_ops[j] = noise.sample_noise_loc(*op, rng[j]);
 
           if (!(noise_ops[j].size() == 0 ||
-                (noise_ops[j].size() == 1 && noise_ops[j][0].name == "id"))) {
+                (noise_ops[j].size() == 1 && noise_ops[j][0]->name == "id"))) {
             count_ops++;
             for (int_t k = 0; k < noise_ops[j].size(); k++) {
-              if (noise_ops[j][k].name != "id" && noise_ops[j][k].name != "x" &&
-                  noise_ops[j][k].name != "y" && noise_ops[j][k].name != "z" &&
-                  noise_ops[j][k].name != "pauli") {
+              if (noise_ops[j][k]->name != "id" && noise_ops[j][k]->name != "x" &&
+                  noise_ops[j][k]->name != "y" && noise_ops[j][k]->name != "z" &&
+                  noise_ops[j][k]->name != "pauli") {
                 non_pauli_gate_count++;
                 break;
               }
@@ -1083,7 +1083,7 @@ void StateChunk<state_t>::apply_ops_multi_shots_for_group(
 
 template <class state_t>
 void StateChunk<state_t>::apply_batched_noise_ops(
-    const int_t i_group, const std::vector<std::vector<Operations::Op>> &ops,
+    const int_t i_group, const std::vector<Operations::opVector> &ops,
     ExperimentResult &result, std::vector<RngEngine> &rng) {
   int_t i, j, k, count, nop, pos = 0;
   uint_t istate = top_chunk_of_group_[i_group];
@@ -1096,7 +1096,7 @@ void StateChunk<state_t>::apply_batched_noise_ops(
 
     if (finished[i])
       continue;
-    if (ops[i].size() == 0 || (ops[i].size() == 1 && ops[i][0].name == "id")) {
+    if (ops[i].size() == 0 || (ops[i].size() == 1 && ops[i][0]->name == "id")) {
       finished[i] = true;
       continue;
     }
@@ -1109,7 +1109,7 @@ void StateChunk<state_t>::apply_batched_noise_ops(
         continue;
       }
       if (ops[j].size() == 0 ||
-          (ops[j].size() == 1 && ops[j][0].name == "id")) {
+          (ops[j].size() == 1 && ops[j][0]->name == "id")) {
         mask[j] = 0;
         finished[j] = true;
         continue;
@@ -1122,11 +1122,11 @@ void StateChunk<state_t>::apply_batched_noise_ops(
 
       mask[j] = true;
       for (k = 0; k < ops[i].size(); k++) {
-        if (ops[i][k].conditional) {
-          cond_reg = ops[i][k].conditional_reg;
+        if (ops[i][k]->conditional) {
+          cond_reg = ops[i][k]->conditional_reg;
         }
-        if (ops[i][k].type != ops[j][k].type ||
-            ops[i][k].name != ops[j][k].name) {
+        if (ops[i][k]->type != ops[j][k]->type ||
+            ops[i][k]->name != ops[j][k]->name) {
           mask[j] = false;
           break;
         }

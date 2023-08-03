@@ -81,46 +81,46 @@ protected:
 
   bool block_circuit(Circuit &circ, bool doSwap) const;
 
-  void put_nongate_ops(std::vector<Operations::Op> &out,
-                       std::vector<Operations::Op> &queue,
-                       std::vector<Operations::Op> &input, bool doSwap) const;
+  void put_nongate_ops(Operations::opVector &out,
+                       Operations::opVector &queue,
+                       Operations::opVector &input, bool doSwap) const;
 
-  uint_t add_ops(std::vector<Operations::Op> &ops,
-                 std::vector<Operations::Op> &out,
-                 std::vector<Operations::Op> &queue, bool doSwap, bool first,
+  uint_t add_ops(Operations::opVector &ops,
+                 Operations::opVector &out,
+                 Operations::opVector &queue, bool doSwap, bool first,
                  bool crossQubitOnly) const;
 
-  void restore_qubits_order(std::vector<Operations::Op> &ops) const;
+  void restore_qubits_order(Operations::opVector &ops) const;
 
-  bool is_cross_qubits_op(Operations::Op &op) const;
+  bool is_cross_qubits_op(const Operations::Op &op) const;
 
-  bool is_diagonal_op(Operations::Op &op) const;
+  bool is_diagonal_op(const Operations::Op &op) const;
 
-  void insert_swap(std::vector<Operations::Op> &ops, uint_t bit0, uint_t bit1,
+  void insert_swap(Operations::opVector &ops, uint_t bit0, uint_t bit1,
                    bool chunk) const;
-  void insert_sim_op(std::vector<Operations::Op> &ops, char *name,
+  void insert_sim_op(Operations::opVector &ops, char *name,
                      const reg_t &qubits) const;
-  void insert_pauli(std::vector<Operations::Op> &ops, reg_t &qubits,
+  void insert_pauli(Operations::opVector &ops, reg_t &qubits,
                     std::string &pauli) const;
 
-  void define_blocked_qubits(std::vector<Operations::Op> &ops,
+  void define_blocked_qubits(Operations::opVector &ops,
                              reg_t &blockedQubits, bool crossQubitOnly) const;
 
   bool can_block(Operations::Op &ops, reg_t &blockedQubits) const;
   bool can_reorder(Operations::Op &ops,
-                   std::vector<Operations::Op> &waiting_ops) const;
+                   Operations::opVector &waiting_ops) const;
 
   bool split_pauli(const Operations::Op &op, const reg_t blockedQubits,
-                   std::vector<Operations::Op> &out,
-                   std::vector<Operations::Op> &queue) const;
+                   Operations::opVector &out,
+                   Operations::opVector &queue) const;
 
   bool split_op(const Operations::Op &op, const reg_t blockedQubits,
-                std::vector<Operations::Op> &out,
-                std::vector<Operations::Op> &queue) const;
+                Operations::opVector &out,
+                Operations::opVector &queue) const;
 
-  bool is_blockable_operation(Operations::Op &op) const;
+  bool is_blockable_operation(const Operations::Op &op) const;
 
-  void target_qubits(Operations::Op &op, reg_t &targets) const;
+  void target_qubits(const Operations::Op &op, reg_t &targets) const;
 };
 
 void CacheBlocking::set_config(const Config &config) {
@@ -179,7 +179,7 @@ void CacheBlocking::set_blocking(int bits, size_t min_memory, uint_t n_place,
   block_bits_ = chunk_bits;
 }
 
-void CacheBlocking::insert_swap(std::vector<Operations::Op> &ops, uint_t bit0,
+void CacheBlocking::insert_swap(Operations::opVector &ops, uint_t bit0,
                                 uint_t bit1, bool chunk) const {
   Operations::Op sgate;
   sgate.type = Operations::OpType::gate;
@@ -192,7 +192,7 @@ void CacheBlocking::insert_swap(std::vector<Operations::Op> &ops, uint_t bit0,
   ops.push_back(sgate);
 }
 
-void CacheBlocking::insert_sim_op(std::vector<Operations::Op> &ops, char *name,
+void CacheBlocking::insert_sim_op(Operations::opVector &ops, char *name,
                                   const reg_t &qubits) const {
   Operations::Op op;
   op.type = Operations::OpType::sim_op;
@@ -297,7 +297,7 @@ void CacheBlocking::optimize_circuit(Circuit &circ, Noise::NoiseModel &noise,
   circ.set_params();
 }
 
-void CacheBlocking::define_blocked_qubits(std::vector<Operations::Op> &ops,
+void CacheBlocking::define_blocked_qubits(Operations::opVector &ops,
                                           reg_t &blockedQubits,
                                           bool crossQubitOnly) const {
   uint_t i, j, iq;
@@ -358,7 +358,7 @@ bool CacheBlocking::can_block(Operations::Op &op, reg_t &blockedQubits) const {
 }
 
 bool CacheBlocking::can_reorder(
-    Operations::Op &op, std::vector<Operations::Op> &waiting_ops) const {
+    Operations::Op &op, Operations::opVector &waiting_ops) const {
   // check if the operation can be reordered in front of waiting queue
   uint_t j, iq, jq;
 
@@ -369,8 +369,8 @@ bool CacheBlocking::can_reorder(
   for (j = 0; j < waiting_ops.size(); j++) {
     if (is_blockable_operation(waiting_ops[j])) {
       for (iq = 0; iq < op.qubits.size(); iq++) {
-        for (jq = 0; jq < waiting_ops[j].qubits.size(); jq++) {
-          if (op.qubits[iq] == waiting_ops[j].qubits[jq]) {
+        for (jq = 0; jq < waiting_ops[j]->qubits.size(); jq++) {
+          if (op.qubits[iq] == waiting_ops[j]->qubits[jq]) {
             return false;
           }
         }
@@ -384,9 +384,9 @@ bool CacheBlocking::can_reorder(
 
 bool CacheBlocking::block_circuit(Circuit &circ, bool doSwap) const {
   uint_t i, n;
-  std::vector<Operations::Op> out;
-  std::vector<Operations::Op> queue;
-  std::vector<Operations::Op> queue_next;
+  Operations::opVector out;
+  Operations::opVector queue;
+  Operations::opVector queue_next;
   bool crossQubits = false;
 
   n = add_ops(circ.ops, out, queue, doSwap, true, crossQubits);
@@ -418,7 +418,7 @@ bool CacheBlocking::block_circuit(Circuit &circ, bool doSwap) const {
 }
 
 void CacheBlocking::restore_qubits_order(
-    std::vector<Operations::Op> &ops) const {
+    Operations::opVector &ops) const {
   uint_t i, j, t;
 
   // insert swap gates to restore original qubit order
@@ -428,8 +428,8 @@ void CacheBlocking::restore_qubits_order(
     if (qubitMap_[i] != i && qubitMap_[i] < block_bits_) {
       if (nInBlock == 0) {
         uint_t last = ops.size() - 1;
-        if (ops[last].type == Operations::OpType::sim_op &&
-            ops[last].name == "end_blocking") {
+        if (ops[last]->type == Operations::OpType::sim_op &&
+            ops[last]->name == "end_blocking") {
           ops.pop_back();
           nInBlock = 1;
         } else {
@@ -456,8 +456,8 @@ void CacheBlocking::restore_qubits_order(
       if (j != i && j < block_bits_) {
         if (nInBlock == 0) {
           uint_t last = ops.size() - 1;
-          if (ops[last].type == Operations::OpType::sim_op &&
-              ops[last].name == "end_blocking") {
+          if (ops[last]->type == Operations::OpType::sim_op &&
+              ops[last]->name == "end_blocking") {
             ops.pop_back();
             nInBlock = 1;
           } else {
@@ -502,7 +502,7 @@ void CacheBlocking::restore_qubits_order(
   } while (count != 0);
 }
 
-bool CacheBlocking::is_blockable_operation(Operations::Op &op) const {
+bool CacheBlocking::is_blockable_operation(const Operations::Op &op) const {
   if (op.type == Operations::OpType::gate ||
       op.type == Operations::OpType::matrix ||
       op.type == Operations::OpType::diagonal_matrix ||
@@ -517,9 +517,9 @@ bool CacheBlocking::is_blockable_operation(Operations::Op &op) const {
   return false;
 }
 
-uint_t CacheBlocking::add_ops(std::vector<Operations::Op> &ops,
-                              std::vector<Operations::Op> &out,
-                              std::vector<Operations::Op> &queue, bool doSwap,
+uint_t CacheBlocking::add_ops(Operations::opVector &ops,
+                              Operations::opVector &out,
+                              Operations::opVector &queue, bool doSwap,
                               bool first, bool crossQubitOnly) const {
   uint_t i, j, iq;
 
@@ -611,20 +611,20 @@ uint_t CacheBlocking::add_ops(std::vector<Operations::Op> &ops,
         if (is_diagonal_op(ops[i]) || can_block(ops[i], blockedQubits)) {
           if (can_reorder(ops[i], queue)) {
             // mapping swapped qubits
-            for (iq = 0; iq < ops[i].qubits.size(); iq++) {
-              ops[i].qubits[iq] = qubitMap_[ops[i].qubits[iq]];
+            for (iq = 0; iq < ops[i]->qubits.size(); iq++) {
+              static_cast<Operations::Op>(ops[i]).qubits[iq] = qubitMap_[ops[i]->qubits[iq]];
             }
             out.push_back(ops[i]);
             num_gates_added++;
             continue;
           }
-        } else if (ops[i].name == "pauli") {
+        } else if (ops[i]->name == "pauli") {
           if (can_reorder(ops[i], queue)) {
             if (split_pauli(ops[i], blockedQubits, out, queue))
               num_gates_added++;
             continue;
           }
-        } else if (ops[i].type ==
+        } else if (ops[i]->type ==
                    Operations::OpType::reset) { // reset for density matrix can
                                                 // be cache blocked
           if (can_reorder(ops[i], queue)) {
@@ -637,8 +637,8 @@ uint_t CacheBlocking::add_ops(std::vector<Operations::Op> &ops,
     } else {
       if (queue.size() == 0) { // if queue is empty, apply op here
         bool restore_qubits = false;
-        if (ops[i].type == Operations::OpType::kraus) {
-          if (ops[i].qubits.size() > block_bits_) {
+        if (ops[i]->type == Operations::OpType::kraus) {
+          if (ops[i]->qubits.size() > block_bits_) {
             throw std::runtime_error(
                 "CacheBlocking : Kraus operator, number of qubits should be "
                 "smaller than chunk qubit size");
@@ -650,8 +650,8 @@ uint_t CacheBlocking::add_ops(std::vector<Operations::Op> &ops,
             queue.push_back(ops[i]);
             continue;
           }
-        } else if (ops[i].type == Operations::OpType::initialize) {
-          if (ops[i].qubits.size() <= block_bits_) {
+        } else if (ops[i]->type == Operations::OpType::initialize) {
+          if (ops[i]->qubits.size() <= block_bits_) {
             if (!can_block(ops[i],
                            blockedQubits)) { // if some qubits are out of chunk,
                                              // queued for next step
@@ -661,17 +661,17 @@ uint_t CacheBlocking::add_ops(std::vector<Operations::Op> &ops,
           }
           // otherwise StateChunk have to parallelize initialize operation
         } else if (sample_measure_ &&
-                   ops[i].type == Operations::OpType::measure) {
+                   ops[i]->type == Operations::OpType::measure) {
           // currently sampling should be done with original qubit mapping (TO
           // DO : sampling without inserting swaps)
           restore_qubits = true;
-        } else if (ops[i].type != Operations::OpType::measure &&
-                   ops[i].type != Operations::OpType::reset &&
-                   ops[i].type != Operations::OpType::save_amps &&
-                   ops[i].type != Operations::OpType::save_amps_sq &&
-                   ops[i].type != Operations::OpType::save_densmat &&
-                   ops[i].type != Operations::OpType::bfunc) {
-          if (ops[i].name != "density_matrix") {
+        } else if (ops[i]->type != Operations::OpType::measure &&
+                   ops[i]->type != Operations::OpType::reset &&
+                   ops[i]->type != Operations::OpType::save_amps &&
+                   ops[i]->type != Operations::OpType::save_amps_sq &&
+                   ops[i]->type != Operations::OpType::save_densmat &&
+                   ops[i]->type != Operations::OpType::bfunc) {
+          if (ops[i]->name != "density_matrix") {
             restore_qubits = true;
           }
         }
@@ -690,8 +690,8 @@ uint_t CacheBlocking::add_ops(std::vector<Operations::Op> &ops,
 
         // mapping swapped qubits
         if (doSwap) {
-          for (iq = 0; iq < ops[i].qubits.size(); iq++) {
-            ops[i].qubits[iq] = qubitMap_[ops[i].qubits[iq]];
+          for (iq = 0; iq < ops[i]->qubits.size(); iq++) {
+            static_cast<Operations::Op&>(ops[i]).qubits[iq] = qubitMap_[ops[i]->qubits[iq]];
           }
         }
 
@@ -722,7 +722,7 @@ uint_t CacheBlocking::add_ops(std::vector<Operations::Op> &ops,
   return num_gates_added;
 }
 
-bool CacheBlocking::is_cross_qubits_op(Operations::Op &op) const {
+bool CacheBlocking::is_cross_qubits_op(const Operations::Op &op) const {
   if (is_diagonal_op(op)) {
     return false;
   }
@@ -747,7 +747,7 @@ bool CacheBlocking::is_cross_qubits_op(Operations::Op &op) const {
   return false;
 }
 
-bool CacheBlocking::is_diagonal_op(Operations::Op &op) const {
+bool CacheBlocking::is_diagonal_op(const Operations::Op &op) const {
   if (op.type == Operations::OpType::gate) {
     if (op.name == "u1")
       return true;
@@ -767,7 +767,7 @@ bool CacheBlocking::is_diagonal_op(Operations::Op &op) const {
   return false;
 }
 
-void CacheBlocking::target_qubits(Operations::Op &op, reg_t &targets) const {
+void CacheBlocking::target_qubits(const Operations::Op &op, reg_t &targets) const {
   if (op.type == Operations::OpType::gate) {
     bool swap = false;
     if (op.name.find("swap") != std::string::npos) {
@@ -787,7 +787,7 @@ void CacheBlocking::target_qubits(Operations::Op &op, reg_t &targets) const {
   }
 }
 
-void CacheBlocking::insert_pauli(std::vector<Operations::Op> &ops,
+void CacheBlocking::insert_pauli(Operations::opVector &ops,
                                  reg_t &qubits, std::string &pauli) const {
   Operations::Op op;
   op.type = Operations::OpType::gate;
@@ -800,8 +800,8 @@ void CacheBlocking::insert_pauli(std::vector<Operations::Op> &ops,
 // split 1 pauli gate to 2 pauli gates (inside and outside)
 bool CacheBlocking::split_pauli(const Operations::Op &op,
                                 const reg_t blockedQubits,
-                                std::vector<Operations::Op> &out,
-                                std::vector<Operations::Op> &queue) const {
+                                Operations::opVector &out,
+                                Operations::opVector &queue) const {
   reg_t qubits_in_chunk;
   reg_t qubits_out_chunk;
   std::string pauli_in_chunk;
@@ -852,8 +852,8 @@ bool CacheBlocking::split_pauli(const Operations::Op &op,
 // split op to inside op and outside op
 bool CacheBlocking::split_op(const Operations::Op &op,
                              const reg_t blockedQubits,
-                             std::vector<Operations::Op> &out,
-                             std::vector<Operations::Op> &queue) const {
+                             Operations::opVector &out,
+                             Operations::opVector &queue) const {
   reg_t qubits_in_chunk;
   reg_t qubits_out_chunk;
   int_t i, j, n;

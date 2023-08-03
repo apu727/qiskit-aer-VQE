@@ -114,7 +114,7 @@ public:
   // and is approximately 16 * 1 << 2 * num_qubits bytes
   virtual size_t
   required_memory_mb(uint_t num_qubits,
-                     const std::vector<Operations::Op> &ops) const override;
+                     const Operations::opVector &ops) const override;
 
   // Load the threshold for applying OpenMP parallelization
   // if the controller/engine allows threads for it
@@ -374,7 +374,7 @@ bool State<densmat_t>::apply_batched_op(const int_t iChunk,
 
 template <class unitary_matrix_t>
 size_t State<unitary_matrix_t>::required_memory_mb(
-    uint_t num_qubits, const std::vector<Operations::Op> &ops) const {
+    uint_t num_qubits, const Operations::opVector &ops) const {
   // An n-qubit unitary as 2^2n complex doubles
   // where each complex double is 16 bytes
   (void)ops; // avoid unused variable compiler warning

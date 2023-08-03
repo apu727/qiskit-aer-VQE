@@ -114,8 +114,8 @@ Result controller_execute(std::vector<std::shared_ptr<Circuit>> &input_circs,
                 throw std::invalid_argument(
                     R"(Invalid parameterization: instruction position out of range)");
               }
-              auto &op = param_circ->ops[instr_pos];
-              if (param_pos >= op.params.size()) {
+              auto &op = param_circ->ops.at(instr_pos);
+              if (param_pos >= op->params.size()) {
                 throw std::invalid_argument(
                     R"(Invalid parameterization: instruction param position out of range)");
               }
@@ -124,7 +124,7 @@ Result controller_execute(std::vector<std::shared_ptr<Circuit>> &input_circs,
                     R"(Invalid parameterization: parameterization value out of range)");
               }
               // Update the param
-              op.params[param_pos] = params.second[j];
+              static_cast<Operations::Op&>(op).params[param_pos] = params.second[j];
             }
           }
           // Run truncation.

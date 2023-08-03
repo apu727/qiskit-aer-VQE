@@ -25,7 +25,7 @@ namespace Noise {
 class ReadoutError {
 public:
   // Alias for return type
-  using NoiseOps = std::vector<Operations::Op>;
+  using NoiseOps = Operations::opVector;
 
   //-----------------------------------------------------------------------
   // Error sampling

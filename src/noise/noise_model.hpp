@@ -50,7 +50,7 @@ namespace Noise {
 class NoiseModel {
 public:
   using Method = QuantumError::Method;
-  using NoiseOps = std::vector<Operations::Op>;
+  using NoiseOps = Operations::opVector;
 
   NoiseModel() = default;
   NoiseModel(const json_t &js) { load_from_json(js); }
@@ -289,7 +289,7 @@ NoiseModel::NoiseOps NoiseModel::sample_noise_loc(const Operations::Op &op,
   // If original op is conditional, make all the noise operations also
   // conditional
   if (op.conditional) {
-    for (auto &noise_op : noise_ops) {
+    for (Operations::Op &noise_op : noise_ops) {
       noise_op.conditional = op.conditional;
       noise_op.conditional_reg = op.conditional_reg;
       noise_op.bfunc = op.bfunc;
@@ -317,7 +317,7 @@ Circuit NoiseModel::sample_noise_circuit(const Circuit &circ, RngEngine &rng,
     mapping = reg_t(circ.qubits().cbegin(), circ.qubits().cend());
 
   // Sample a noisy realization of the circuit
-  for (const auto &op : circ.ops) {
+  for (const Operations::Op &op : circ.ops) {
     switch (op.type) {
     // Operations that cannot have noise
     case Operations::OpType::barrier:
@@ -369,7 +369,7 @@ NoiseModel::NoiseOps NoiseModel::sample_noise_op(const Operations::Op &op,
   // If original op is conditional, make all the noise operations also
   // conditional
   if (op.conditional) {
-    for (auto &noise_op : noise_ops) {
+    for (Operations::Op &noise_op : noise_ops) {
       noise_op.conditional = op.conditional;
       noise_op.conditional_reg = op.conditional_reg;
       noise_op.bfunc = op.bfunc;
@@ -536,13 +536,13 @@ NoiseModel::sample_noise_helper(const Operations::Op &op, RngEngine &rng,
                    std::make_move_iterator(noise_after.end()));
 
   if (op.type != Operations::OpType::measure && noise_ops.size() == 2 &&
-      noise_ops[0].qubits == noise_ops[1].qubits) {
+      noise_ops[0]->qubits == noise_ops[1]->qubits) {
     // Try and fuse operations
     // If either are superoperators combine superoperators
     // else if either are unitaries combine unitaries
     // otherwise return the full list
-    auto &first_op = noise_ops[0];
-    auto &second_op = noise_ops[1];
+    Operations::Op &first_op = noise_ops[0];
+    Operations::Op &second_op = noise_ops[1];
 
     if (second_op.type == Operations::OpType::superop) {
       auto &current = second_op;
@@ -559,7 +559,7 @@ NoiseModel::sample_noise_helper(const Operations::Op &op, RngEngine &rng,
         return NoiseOps({current});
       }
     } else if (second_op.type == Operations::OpType::matrix) {
-      auto &current = noise_before[1];
+      Operations::Op &current = noise_before[1];
       const auto mat = op2unitary(first_op);
       if (!mat.empty()) {
         current.mats[0] = current.mats[0] * mat;
@@ -637,7 +637,7 @@ void NoiseModel::sample_readout_noise(const Operations::Op &op,
         auto noise_ops =
             readout_errors_[pos].sample_noise(memory_sets[qs], rng);
         if (has_registers) {
-          for (auto &noise_op : noise_ops) {
+          for (Operations::Op &noise_op : noise_ops) {
             noise_op.registers = registers_sets[qs];
           }
         }
@@ -802,7 +802,7 @@ NoiseModel::NoiseOps
 NoiseModel::create_noise_loc(const Operations::Op &op) const {
   NoiseOps ops(1);
   ops[0] = op;
-  ops[0].type = Operations::OpType::qerror_loc;
+  static_cast<Operations::Op&>(ops[0]).type = Operations::OpType::qerror_loc;
   return ops;
 }
 

@@ -137,7 +137,7 @@ public:
   // and is approximately 16 * 1 << num_qubits bytes
   virtual size_t
   required_memory_mb(uint_t num_qubits,
-                     const std::vector<Operations::Op> &ops) const override;
+                     const Operations::opVector &ops) const override;
 
   // Load the threshold for applying OpenMP parallelization
   // if the controller/engine allows threads for it
@@ -539,7 +539,7 @@ void State<statevec_t>::apply_global_phase() {
 
 template <class statevec_t>
 size_t State<statevec_t>::required_memory_mb(
-    uint_t num_qubits, const std::vector<Operations::Op> &ops) const {
+    uint_t num_qubits, const Operations::opVector &ops) const {
   (void)ops; // avoid unused variable compiler warning
   statevec_t tmp;
   return tmp.required_memory_mb(num_qubits);

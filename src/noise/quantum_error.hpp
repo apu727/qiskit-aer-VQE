@@ -35,7 +35,7 @@ public:
   enum class Method { circuit, superop, kraus };
 
   // Alias for return type
-  using NoiseOps = std::vector<Operations::Op>;
+  using NoiseOps = Operations::opVector;
 
   //-----------------------------------------------------------------------
   // Sampling method
@@ -168,7 +168,7 @@ QuantumError::NoiseOps QuantumError::sample_noise(const reg_t &qubits,
     }
     NoiseOps noise_ops = circuits_[r];
     // Add qubits to noise op commands;
-    for (auto &op : noise_ops) {
+    for (Operations::Op &op : noise_ops) {
       // Update qubits based on position in qubits list
       for (auto &qubit : op.qubits) {
         qubit = qubits[qubit];
@@ -211,7 +211,7 @@ void QuantumError::set_circuits(const std::vector<NoiseOps> &circuits,
     if (probs[j] > threshold_) {
       probabilities_.push_back(probs[j]);
       circuits_.push_back(circuits[j]);
-      for (const auto &op : circuits[j]) {
+      for (const Operations::Op &op : circuits[j]) {
         // Check max qubit size
         for (const auto &qubit : op.qubits) {
           num_qubits = std::max(num_qubits, qubit + 1);

@@ -82,7 +82,7 @@ public:
 
   size_t
   required_memory_mb(uint_t num_qubits,
-                     const std::vector<Operations::Op> &ops) const override;
+                     const Operations::opVector &ops) const override;
 
   void set_config(const Config &config) override;
 
@@ -303,14 +303,14 @@ template <typename InputIterator>
 std::pair<bool, size_t> State::check_stabilizer_opt(InputIterator first,
                                                     InputIterator last) const {
   for (auto op = first; op != last; op++) {
-    if (op->type != Operations::OpType::gate) {
+    if (static_cast<const Operations::Op&>(*op).type != Operations::OpType::gate) {
       continue;
     }
-    auto it = CHSimulator::gate_types_.find(op->name);
+    auto it = CHSimulator::gate_types_.find(static_cast<const Operations::Op&>(*op).name);
     if (it == CHSimulator::gate_types_.end()) {
       throw std::invalid_argument("CHState::check_measurement_opt doesn't "
                                   "recognise a the operation \'" +
-                                  op->name + "\'.");
+                                  static_cast<const Operations::Op&>(*op).name + "\'.");
     }
     if (it->second == CHSimulator::Gatetypes::non_clifford) {
       return std::pair<bool, size_t>({false, op - first});
@@ -323,13 +323,13 @@ template <typename InputIterator>
 bool State::check_measurement_opt(InputIterator first,
                                   InputIterator last) const {
   for (auto op = first; op != last; op++) {
-    if (op->conditional) {
+    if (static_cast<const Operations::Op&>(*op).conditional) {
       return false;
     }
-    if (op->type == Operations::OpType::measure ||
-        op->type == Operations::OpType::bfunc ||
-        op->type == Operations::OpType::save_statevec ||
-        op->type == Operations::OpType::save_expval) {
+    if (static_cast<const Operations::Op&>(*op).type == Operations::OpType::measure ||
+        static_cast<const Operations::Op&>(*op).type == Operations::OpType::bfunc ||
+        static_cast<const Operations::Op&>(*op).type == Operations::OpType::save_statevec ||
+        static_cast<const Operations::Op&>(*op).type == Operations::OpType::save_expval) {
       return false;
     }
   }
@@ -374,7 +374,7 @@ void State::apply_ops(InputIterator first, InputIterator last,
       apply_ops_parallel(it_nonstab_begin, last, result, rng);
     } else {
       for (auto it = it_nonstab_begin; it != last; it++) {
-        const auto op = *it;
+        const Operations::Op op = *it;
         if (BaseState::creg().check_conditional(op)) {
           switch (op.type) {
           case Operations::OpType::gate:
@@ -471,7 +471,7 @@ void State::apply_ops_parallel(InputIterator first, InputIterator last,
       continue;
     }
     for (auto it = first; it != last; it++) {
-      switch (it->type) {
+      switch (static_cast<const Operations::Op&>(*it).type) {
       case Operations::OpType::gate:
         apply_gate(*it, rng, i);
         break;
@@ -481,7 +481,7 @@ void State::apply_ops_parallel(InputIterator first, InputIterator last,
       default:
         throw std::invalid_argument("CH::State::apply_ops_parallel does not "
                                     "support operations of the type \'" +
-                                    it->name + "\'.");
+                                    static_cast<const Operations::Op&>(*it).name + "\'.");
         break;
       }
     }
@@ -854,7 +854,7 @@ void State::compute_extent(const Operations::Op &op, double &xi) const {
 }
 
 size_t State::required_memory_mb(uint_t num_qubits,
-                                 const std::vector<Operations::Op> &ops) const {
+                                 const Operations::opVector &ops) const {
   size_t required_chi = compute_chi(ops.cbegin(), ops.cend());
   // 5 vectors of num_qubits*8byte words
   // Plus 2*CHSimulator::scalar_t which has 3 4 byte words

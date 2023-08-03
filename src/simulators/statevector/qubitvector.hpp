@@ -337,7 +337,7 @@ public:
 
   // apply Pauli ops to multiple-shots (apply sampled Pauli noises)
   virtual void
-  apply_batched_pauli_ops(const std::vector<std::vector<Operations::Op>> &op) {}
+  apply_batched_pauli_ops(const std::vector<Operations::opVector> &op) {}
 
   // Apply Kraus to multiple-shots
   void apply_batched_kraus(const reg_t &qubits,

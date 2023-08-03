@@ -159,7 +159,7 @@ Qobj::Qobj(const inputdata_t &input) {
               throw std::invalid_argument(
                   R"(Invalid parameterized qobj: instruction position out of range)");
             }
-            auto &op = param_circuit->ops[instr_pos];
+            Operations::Op &op = param_circuit->ops[instr_pos];
             if (param_pos >= op.params.size()) {
               throw std::invalid_argument(
                   R"(Invalid parameterized qobj: instruction param position out of range)");

@@ -37,7 +37,7 @@ public:
   using ignore_argument = void;
   using DataSubType = Operations::DataSubType;
   using OpType = Operations::OpType;
-  using OpItr = std::vector<Operations::Op>::const_iterator;
+  using OpItr = Operations::opVector::const_iterator;
 
   //-----------------------------------------------------------------------
   // Constructors
@@ -97,7 +97,7 @@ public:
   // specified sequence of operations on a `num_qubit` sized State.
   virtual size_t
   required_memory_mb(uint_t num_qubits,
-                     const std::vector<Operations::Op> &ops) const = 0;
+                     const Operations::opVector &ops) const = 0;
 
   // memory allocation (previously called before inisitalize_qreg)
   virtual bool allocate(uint_t num_qubits, uint_t block_bits,
@@ -269,22 +269,22 @@ void Base::apply_ops(const OpItr first, const OpItr last,
   std::unordered_map<std::string, OpItr> marks;
   // Simple loop over vector of input operations
   for (auto it = first; it != last; ++it) {
-    switch (it->type) {
+    switch ((*it)->type) {
     case Operations::OpType::mark: {
-      marks[it->string_params[0]] = it;
+      marks[(*it)->string_params[0]] = it;
       break;
     }
     case Operations::OpType::jump: {
       if (creg().check_conditional(*it)) {
-        const auto &mark_name = it->string_params[0];
+        const auto &mark_name = (*it)->string_params[0];
         auto mark_it = marks.find(mark_name);
         if (mark_it != marks.end()) {
           it = mark_it->second;
         } else {
           for (++it; it != last; ++it) {
-            if (it->type == Operations::OpType::mark) {
-              marks[it->string_params[0]] = it;
-              if (it->string_params[0] == mark_name) {
+            if ((*it)->type == Operations::OpType::mark) {
+              marks[(*it)->string_params[0]] = it;
+              if ((*it)->string_params[0] == mark_name) {
                 break;
               }
             }

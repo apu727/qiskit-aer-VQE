@@ -21,9 +21,220 @@
 #include "framework/operations.hpp"
 #include "framework/opset.hpp"
 
+//#include "framework/vqe_circuit.hpp"
+
 using complex_t = std::complex<double>;
 
 namespace AER {
+
+
+
+/*template <class T>
+class RefCountedVector
+{
+private:
+  // class that holds a reference to an object and detaches when someone tries to write to it
+
+  class sharedData<T>
+  {
+    std::shared_ptr<T> m_data;
+
+    void detachIfNeeded() {
+      if (!m_data.unique()) 
+      {
+          m_data = std::make_shared<T>(*m_data);
+      }
+    }
+  public:
+
+    sharedData()
+    {
+      m_data = std::make_shared<T>()
+    }
+
+    sharedData(const T& other)
+    {
+      m_data = std::make_shared<T>(other);
+    }
+
+    sharedData(const T&& other)
+    {
+      m_data = std::make_shared<T>(std::move(other));
+    }
+
+    sharedData(const sharedData<T>& other)
+    {
+      m_data = other.m_data
+    }
+
+    sharedData(const T&& other)
+    {
+      m_data = std::move(other.m_data)
+    }
+
+    sharedData(const std::shared_ptr<T> other)
+    {
+      m_data = other;
+    }
+
+    sharedData& operator=(const sharedData& other) 
+    {
+        m_data = other.m_data;
+        return *this;
+    }
+
+    sharedData& operator=(const T& other) 
+    {
+        m_data = std::make_shared<T>(other);
+        return *this;
+    }
+
+    operator const T () const
+    {
+      return *m_data
+    }
+
+    operator T ()
+    {
+      detachIfNeeded()
+      return *m_data
+    }
+  };
+
+  
+  std::vector<sharedData<T>> m_data;
+
+public:
+  RefCountedVector()
+  {
+      m_data = std::vector<sharedData<T>>();
+  }
+
+  RefCountedVector(const RefCountedVector& other)
+  {
+      m_data = other.m_data;
+  }
+
+  RefCountedVector& operator=(const RefCountedVector& other) 
+  {
+      m_data = other.m_data;
+      return *this;
+  }
+
+  RefCountedVector& operator=(std::vector<sharedData<T>>&& other) 
+  {
+      m_data = std::vector<sharedData<T>>(std::move(other));
+      return *this;
+  }
+
+  RefCountedVector& operator=(const std::vector<sharedData<T>>& other) 
+  {
+      m_data = std::vector<sharedData<T>>(other);
+      return *this;
+  }
+
+  const T& operator[](std::size_t index) const 
+  {
+      return static_cast<const T>(m_data[index]);
+  }
+
+  T& at(std::size_t index) 
+  {
+      return m_data[index];
+  }
+
+  std::size_t size() const {
+      return m_data.size();
+  }
+
+  void push_back(const T& value) 
+  {
+      m_data.push_back(sharedData<T>(value));
+  }
+
+  void push_back(const sharedData<T>& value) 
+  {
+      m_data.push_back(value);
+  }
+
+  void reserve(std::size_t newCapacity) 
+  {
+    m_data.reserve(newCapacity);
+  }
+
+  const T& back() const
+  {
+    return static_cast<const T>(m_data.back());
+  }
+
+  bool empty() const
+  {
+    return m_data.empty();
+  }
+  auto begin()
+  {
+    return m_data.begin();
+  }
+
+  auto end()
+  {
+    return m_data.end();
+  }
+
+  auto begin() const {return cbegin();}
+  auto cbegin() const
+  {
+    return m_data.cbegin();
+  }
+
+  auto end() const {return cend();}
+  auto cend() const
+  {
+    return m_data.cend();
+  }
+
+  void resize(size_t n)
+  {
+    m_data.resize(n);
+  }
+
+  /*template<class... Args >
+  void emplace_back(Args&&... args)
+  {
+    detachIfNeeded();
+    m_data.emplace_back(std::forward<Args>(args)...);
+  }
+
+  template< class InputIt >
+  typename std::vector<sharedData<T>>::iterator insert(typename std::vector<sharedData<T>>::const_iterator  pos, InputIt first, InputIt last )
+  {
+    return m_data->insert(pos,first,last);
+  }
+
+  typename std::vector<sharedData<T>>::iterator erase(typename std::vector<sharedData<T>>::iterator first, typename std::vector<sharedData<T>>::iterator last )
+  {
+    m_data->erase(first,last);
+  }
+
+  operator const std::vector<sharedData<T>>& () const 
+  {
+    return *m_data;
+  }
+  operator std::vector<sharedData<T>>& () 
+  {
+    return *m_data;
+  }
+
+    
+};
+//TODO no clue but this is needed
+template <typename T>
+void to_json(nlohmann::json &js, const RefCountedVector<T> &vec) {
+  js = nlohmann::json();
+  for (size_t i = 0; i < vec.size(); i++) {
+    js.push_back(vec[i]);
+  }
+}*/
 
 //============================================================================
 // Circuit class for Qiskit-Aer
@@ -31,16 +242,22 @@ namespace AER {
 
 // A circuit is a list of Ops along with a specification of maximum needed
 // qubits, memory bits, and register bits for the input operators.
+//template <typename T>
+//using vectorType = RefCountedVector<T>;
+//template <typename T>
+//using vectorType = std::vector<sharedData<T>>;
+
 class Circuit {
 public:
   using Op = Operations::Op;
   using OpType = Operations::OpType;
+  using opVector = Operations::opVector;
 
   // circuit id
   int circ_id = 0;
 
   // Circuit operations
-  std::vector<Op> ops;
+  opVector ops;
 
   // Circuit parameters updated by from ops by set_params
   uint_t num_qubits = 0;    // maximum number of qubits needed for ops
@@ -67,8 +284,8 @@ public:
   // The constructor automatically calculates the num_qubits, num_memory,
   // num_registers parameters by scanning the input list of ops.
   Circuit() { set_random_seed(); }
-  Circuit(const std::vector<Op> &_ops, bool truncation = false);
-  Circuit(std::vector<Op> &&_ops, bool truncation = false);
+  Circuit(const opVector &_ops, bool truncation = false);
+  Circuit(opVector &&_ops, bool truncation = false);
 
   // Construct a circuit from JSON
   template <typename inputdata_t>
@@ -289,12 +506,12 @@ inline void from_json(const json_t &js, Circuit &circ) { circ = Circuit(js); }
 // Implementation: Circuit methods
 //============================================================================
 
-Circuit::Circuit(const std::vector<Op> &_ops, bool truncation) : Circuit() {
+Circuit::Circuit(const opVector &_ops, bool truncation) : Circuit() {
   ops = _ops;
   set_params(truncation);
 }
 
-Circuit::Circuit(std::vector<Op> &&_ops, bool truncation) : Circuit() {
+Circuit::Circuit(opVector &&_ops, bool truncation) : Circuit() {
   ops = std::move(_ops);
   set_params(truncation);
 }
@@ -332,7 +549,7 @@ Circuit::Circuit(const inputdata_t &circ, const json_t &qobj_config,
   // TODO: If parser could support reverse iteration through the list of ops
   // without conversion we could call `get_reversed_ops` on the inputdata
   // without first converting.
-  std::vector<Op> converted_ops;
+  opVector converted_ops;
   for (auto the_op : input_ops) {
     converted_ops.emplace_back(Operations::input_to_op(the_op));
   }
@@ -431,16 +648,16 @@ void Circuit::set_params(bool truncation) {
   for (size_t i = 0; i < size; ++i) {
     const size_t rpos = size - i - 1;
     const auto &op = ops[rpos];
-    if (op.type == OpType::mark && last_ancestor_pos == 0)
+    if (static_cast<const Op&>(op).type == OpType::mark && last_ancestor_pos == 0)
       last_ancestor_pos = rpos;
     if (!truncation || check_result_ancestor(op, ancestor_qubits)) {
       add_op_metadata(op);
       ancestor[rpos] = true;
       num_ancestors++;
-      if (op.type == OpType::measure) {
+      if (static_cast<const Op&>(op).type == OpType::measure) {
         first_measure_pos = rpos;
         has_measure = true;
-      } else if (op.type == OpType::initialize && last_initialize_pos == 0) {
+      } else if (static_cast<const Op&>(op).type == OpType::initialize && last_initialize_pos == 0) {
         last_initialize_pos = rpos;
       }
       if (last_ancestor_pos == 0) {
@@ -477,14 +694,14 @@ void Circuit::set_params(bool truncation) {
 
   // Check if can sample initialize
   if (last_initialize_pos > 0 &&
-      ops[last_initialize_pos].qubits.size() < num_qubits) {
+      static_cast<const Op&>(ops[last_initialize_pos]).qubits.size() < num_qubits) {
     can_sample_initialize = false;
     can_sample = false;
   }
 
   // Check measurement opt and split tail meas and non-meas ops
   std::vector<uint_t> tail_pos;
-  std::vector<Op> tail_meas_ops;
+  opVector tail_meas_ops;
   if (has_measure && can_sample) {
     std::unordered_set<uint_t> meas_qubits;
     std::unordered_set<uint_t> modified_qubits;
@@ -495,7 +712,7 @@ void Circuit::set_params(bool truncation) {
         continue;
       }
 
-      const auto &op = ops[pos];
+      const auto &op = static_cast<const Op&>(ops[pos]);
       if (op.conditional) {
         can_sample = false;
         break;
@@ -553,8 +770,8 @@ void Circuit::set_params(bool truncation) {
     head_end = last_ancestor_pos + 1;
   }
   for (size_t pos = 0; pos < head_end; ++pos) {
-    if (ops_to_remove && !ancestor[pos] && ops[pos].type != OpType::mark &&
-        ops[pos].type != OpType::jump) {
+    if (ops_to_remove && !ancestor[pos] && static_cast<const Op&>(ops[pos]).type != OpType::mark &&
+        static_cast<const Op&>(ops[pos]).type != OpType::jump) {
       // Skip if not ancestor
       continue;
     }
@@ -564,10 +781,10 @@ void Circuit::set_params(bool truncation) {
     if (pos != op_idx) {
       ops[op_idx] = std::move(ops[pos]);
     }
-    if (ops[op_idx].type == OpType::jump) {
-      dests.insert(ops[op_idx].string_params[0]);
-    } else if (ops[op_idx].type == OpType::mark) {
-      auto &mark_name = ops[op_idx].string_params[0];
+    if (static_cast<const Op&>(ops[op_idx]).type == OpType::jump) {
+      dests.insert(static_cast<const Op&>(ops[op_idx]).string_params[0]);
+    } else if (static_cast<const Op&>(ops[op_idx]).type == OpType::mark) {
+      auto &mark_name = static_cast<const Op&>(ops[op_idx]).string_params[0];
       if (marks.find(mark_name) != marks.end()) {
         std::stringstream msg;
         msg << "Duplicated mark destination:\"" << mark_name << "\"."
@@ -599,7 +816,7 @@ void Circuit::set_params(bool truncation) {
       }
       auto &op = ops[tpos];
       if (remapped_qubits) {
-        remap_qubits(ops[tpos]);
+        remap_qubits(ops.at(tpos));
       }
       if (tpos != op_idx) {
         ops[op_idx] = std::move(op);

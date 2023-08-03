@@ -135,7 +135,7 @@ public:
   // and is approximately 16 * 1 << num_qubits bytes
   virtual size_t
   required_memory_mb(uint_t num_qubits,
-                     const std::vector<Operations::Op> &ops) const override;
+                     const Operations::opVector &ops) const override;
 
   // Sample n-measurement outcomes without applying the measure operation
   // to the system state
@@ -417,7 +417,7 @@ void State<tensor_net_t>::apply_global_phase(void) {
 
 template <class tensor_net_t>
 size_t State<tensor_net_t>::required_memory_mb(
-    uint_t num_qubits, const std::vector<Operations::Op> &ops) const {
+    uint_t num_qubits, const Operations::opVector &ops) const {
   return 0;
 }
 

@@ -360,7 +360,7 @@ public:
 
   // apply Pauli ops to multiple-shots (apply sampled Pauli noises)
   virtual void
-  apply_batched_pauli_ops(const std::vector<std::vector<Operations::Op>> &ops);
+  apply_batched_pauli_ops(const std::vector<Operations::opVector> &ops);
 
   // Apply Kraus to multiple-shots
   virtual void apply_batched_kraus(const reg_t &qubits,
@@ -2830,7 +2830,7 @@ public:
 
 template <typename data_t>
 void QubitVectorThrust<data_t>::apply_batched_pauli_ops(
-    const std::vector<std::vector<Operations::Op>> &ops) {
+    const std::vector<Operations::opVector> &ops) {
   if (enable_batch_ && chunk_.pos() != 0) {
     return; // first chunk execute all in batch
   }

@@ -118,7 +118,7 @@ public:
   // and is approximately 16 * 1 << num_qubits bytes
   virtual size_t
   required_memory_mb(uint_t num_qubits,
-                     const std::vector<Operations::Op> &ops) const override;
+                     const Operations::opVector &ops) const override;
 
   // Load the threshold for applying OpenMP parallelization
   // if the controller/engine allows threads for it
@@ -562,7 +562,7 @@ auto State<densmat_t>::copy_to_matrix(const int_t iChunk) {
 
 template <class densmat_t>
 size_t State<densmat_t>::required_memory_mb(
-    uint_t num_qubits, const std::vector<Operations::Op> &ops) const {
+    uint_t num_qubits, const Operations::opVector &ops) const {
   (void)ops; // avoid unused variable compiler warning
   (void)ops; // avoid unused variable compiler warning
   densmat_t tmp;

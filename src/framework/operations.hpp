@@ -305,6 +305,52 @@ struct Op {
   // Save
   DataSubType save_type = DataSubType::single;
 };
+template <class T>
+class sharedT
+  {
+    std::shared_ptr<T> m_data;
+
+    void detachIfNeeded() {
+      if (!m_data.unique()) 
+      {
+          m_data = std::make_shared<T>(*m_data);
+      }
+    }
+  public:
+    sharedT(){m_data = std::make_shared<T>();}
+
+    sharedT(const T &other) {m_data = std::make_shared<T>(other);}
+
+    sharedT(const T &&other) {m_data = std::make_shared<T>(std::move(other));}
+
+    sharedT(const sharedT &other) {m_data = other.m_data;}
+
+    sharedT(const sharedT &&other) {m_data = std::move(other.m_data);}
+
+    sharedT(const std::shared_ptr<T> other) {m_data = other;}
+
+    sharedT &operator=(const sharedT &other) {
+      m_data = other.m_data;
+      return *this;
+    }
+
+    sharedT &operator=(const T &other) {
+      m_data = std::make_shared<T>(other);
+      return *this;
+    }
+
+    operator const T&() const { return *m_data; }
+
+    operator T&() {
+      detachIfNeeded();
+      return *m_data;
+    }
+//TODO shared_ptr?
+    const T* operator->() const {return &(*m_data);}
+    const T& operator*() const {return *m_data;}
+};
+
+typedef std::vector<sharedT<Op>> opVector;
 
 inline std::ostream &operator<<(std::ostream &s, const Op &op) {
   s << op.name << "[";

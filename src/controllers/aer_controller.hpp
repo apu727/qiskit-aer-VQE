@@ -1753,10 +1753,10 @@ void Controller::measure_sampler(InputIterator first_meas,
     return;
   }
 
-  std::vector<Operations::Op> meas_ops;
-  std::vector<Operations::Op> roerror_ops;
+  Operations::opVector meas_ops;
+  Operations::opVector roerror_ops;
   for (auto op = first_meas; op != last_meas; op++) {
-    if (op->type == Operations::OpType::roerror) {
+    if ((*op)->type == Operations::OpType::roerror) {
       roerror_ops.push_back(*op);
     } else { /*(op.type == Operations::OpType::measure) */
       meas_ops.push_back(*op);
@@ -1765,7 +1765,7 @@ void Controller::measure_sampler(InputIterator first_meas,
 
   // Get measured qubits from circuit sort and delete duplicates
   std::vector<uint_t> meas_qubits; // measured qubits
-  for (const auto &op : meas_ops) {
+  for (const Operations::Op &op : meas_ops) {
     for (size_t j = 0; j < op.qubits.size(); ++j)
       meas_qubits.push_back(op.qubits[j]);
   }
@@ -1795,7 +1795,7 @@ void Controller::measure_sampler(InputIterator first_meas,
   // Maps of memory and register to qubit position
   std::map<uint_t, uint_t> memory_map;
   std::map<uint_t, uint_t> register_map;
-  for (const auto &op : meas_ops) {
+  for (const Operations::Op &op : meas_ops) {
     for (size_t j = 0; j < op.qubits.size(); ++j) {
       auto pos = qubit_map[op.qubits[j]];
       if (!op.memory.empty())

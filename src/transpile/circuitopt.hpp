@@ -25,7 +25,7 @@
 namespace AER {
 namespace Transpile {
 
-using op_t = Operations::Op;
+using op_t = Operations::sharedT<Operations::Op>;
 using optype_t = Operations::OpType;
 using oplist_t = std::vector<op_t>;
 using opset_t = Operations::OpSet;

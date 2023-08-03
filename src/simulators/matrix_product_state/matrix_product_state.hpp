@@ -114,7 +114,7 @@ public:
   // and is approximately 16 * 1 << num_qubits bytes
   virtual size_t
   required_memory_mb(uint_t num_qubits,
-                     const std::vector<Operations::Op> &ops) const override;
+                     const Operations::opVector &ops) const override;
 
   // Load the threshold for applying OpenMP parallelization
   // if the controller/engine allows threads for it
@@ -319,7 +319,7 @@ void State::initialize_omp() {
 }
 
 size_t State::required_memory_mb(uint_t num_qubits,
-                                 const std::vector<Operations::Op> &ops) const {
+                                 const Operations::opVector &ops) const {
   // for each qubit we have a tensor structure.
   // Initially, each tensor contains 2 matrices with a single complex double
   // Depending on the number of 2-qubit gates,
