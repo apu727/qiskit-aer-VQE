@@ -284,6 +284,7 @@ public:
   // The constructor automatically calculates the num_qubits, num_memory,
   // num_registers parameters by scanning the input list of ops.
   Circuit() { set_random_seed(); }
+  Circuit(const Circuit& other) = default;
   Circuit(const opVector &_ops, bool truncation = false);
   Circuit(opVector &&_ops, bool truncation = false);
 
