@@ -351,7 +351,7 @@ public:
             const int_t cond_regidx = -1, const std::string label = "") {
     ops.push_back(Operations::make_gate(name, qubits, params, string_params,
                                         cond_regidx, label));
-    check_gate_params(ops.back());
+    check_gate_params(ops.back().operator const AER::Operations::Op &());
   }
 
   void diagonal(const reg_t &qubits, const cvector_t &vec,
@@ -695,7 +695,7 @@ void Circuit::set_params(bool truncation) {
 
   // Check if can sample initialize
   if (last_initialize_pos > 0 &&
-      static_cast<const Op&>(ops[last_initialize_pos]).qubits.size() < num_qubits) {
+      ops[last_initialize_pos]->qubits.size() < num_qubits) {
     can_sample_initialize = false;
     can_sample = false;
   }
@@ -713,7 +713,7 @@ void Circuit::set_params(bool truncation) {
         continue;
       }
 
-      const auto &op = static_cast<const Op&>(ops[pos]);
+      const auto &op = ops[pos].operator const AER::Operations::Op &();
       if (op.conditional) {
         can_sample = false;
         break;
@@ -771,8 +771,8 @@ void Circuit::set_params(bool truncation) {
     head_end = last_ancestor_pos + 1;
   }
   for (size_t pos = 0; pos < head_end; ++pos) {
-    if (ops_to_remove && !ancestor[pos] && static_cast<const Op&>(ops[pos]).type != OpType::mark &&
-        static_cast<const Op&>(ops[pos]).type != OpType::jump) {
+    if (ops_to_remove && !ancestor[pos] && ops[pos]->type != OpType::mark &&
+        ops[pos]->type != OpType::jump) {
       // Skip if not ancestor
       continue;
     }
@@ -782,10 +782,10 @@ void Circuit::set_params(bool truncation) {
     if (pos != op_idx) {
       ops[op_idx] = std::move(ops[pos]);
     }
-    if (static_cast<const Op&>(ops[op_idx]).type == OpType::jump) {
-      dests.insert(static_cast<const Op&>(ops[op_idx]).string_params[0]);
-    } else if (static_cast<const Op&>(ops[op_idx]).type == OpType::mark) {
-      auto &mark_name = static_cast<const Op&>(ops[op_idx]).string_params[0];
+    if (ops[op_idx]->type == OpType::jump) {
+      dests.insert(ops[op_idx]->string_params[0]);
+    } else if (ops[op_idx]->type == OpType::mark) {
+      const auto &mark_name = ops[op_idx]->string_params[0];
       if (marks.find(mark_name) != marks.end()) {
         std::stringstream msg;
         msg << "Duplicated mark destination:\"" << mark_name << "\"."

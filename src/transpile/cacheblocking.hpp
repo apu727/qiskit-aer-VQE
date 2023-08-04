@@ -81,9 +81,9 @@ protected:
 
   bool block_circuit(Circuit &circ, bool doSwap) const;
 
-  void put_nongate_ops(Operations::opVector &out,
-                       Operations::opVector &queue,
-                       Operations::opVector &input, bool doSwap) const;
+  void put_nongate_ops(const Operations::opVector &out,
+                       const Operations::opVector &queue,
+                       const Operations::opVector &input, bool doSwap) const;
 
   uint_t add_ops(Operations::opVector &ops,
                  Operations::opVector &out,
@@ -103,12 +103,12 @@ protected:
   void insert_pauli(Operations::opVector &ops, reg_t &qubits,
                     std::string &pauli) const;
 
-  void define_blocked_qubits(Operations::opVector &ops,
+  void define_blocked_qubits(const Operations::opVector &ops,
                              reg_t &blockedQubits, bool crossQubitOnly) const;
 
-  bool can_block(Operations::Op &ops, reg_t &blockedQubits) const;
-  bool can_reorder(Operations::Op &ops,
-                   Operations::opVector &waiting_ops) const;
+  bool can_block(const Operations::Op &ops, reg_t &blockedQubits) const;
+  bool can_reorder(const Operations::Op &ops,
+                   const Operations::opVector &waiting_ops) const;
 
   bool split_pauli(const Operations::Op &op, const reg_t blockedQubits,
                    Operations::opVector &out,
@@ -216,10 +216,10 @@ void CacheBlocking::optimize_circuit(Circuit &circ, Noise::NoiseModel &noise,
     // operations
     int_t max_params = 1;
     for (uint_t i = 0; i < circ.ops.size(); i++) {
-      if (is_blockable_operation(circ.ops[i]) &&
-          is_cross_qubits_op(circ.ops[i])) {
+      if (is_blockable_operation(circ.ops[i].operator const AER::Operations::Op &()) &&
+          is_cross_qubits_op(circ.ops[i].operator const AER::Operations::Op &())) {
         reg_t targets;
-        target_qubits(circ.ops[i], targets);
+        target_qubits(circ.ops[i].operator const AER::Operations::Op &(), targets);
         if (targets.size() > max_params)
           max_params = targets.size();
       }
@@ -297,7 +297,7 @@ void CacheBlocking::optimize_circuit(Circuit &circ, Noise::NoiseModel &noise,
   circ.set_params();
 }
 
-void CacheBlocking::define_blocked_qubits(Operations::opVector &ops,
+void CacheBlocking::define_blocked_qubits(const Operations::opVector &ops,
                                           reg_t &blockedQubits,
                                           bool crossQubitOnly) const {
   uint_t i, j, iq;
@@ -332,7 +332,7 @@ void CacheBlocking::define_blocked_qubits(Operations::opVector &ops,
   }
 }
 
-bool CacheBlocking::can_block(Operations::Op &op, reg_t &blockedQubits) const {
+bool CacheBlocking::can_block(const Operations::Op &op, reg_t &blockedQubits) const {
   // check if the operation can be blocked in cache
   reg_t targets;
   target_qubits(op, targets);
@@ -358,7 +358,7 @@ bool CacheBlocking::can_block(Operations::Op &op, reg_t &blockedQubits) const {
 }
 
 bool CacheBlocking::can_reorder(
-    Operations::Op &op, Operations::opVector &waiting_ops) const {
+    const Operations::Op &op, const Operations::opVector &waiting_ops) const {
   // check if the operation can be reordered in front of waiting queue
   uint_t j, iq, jq;
 
@@ -606,29 +606,29 @@ uint_t CacheBlocking::add_ops(Operations::opVector &ops,
 
   // gather blocked gates
   for (i = 0; i < ops.size(); i++) {
-    if (is_blockable_operation(ops[i])) {
+    if (is_blockable_operation(ops[i].operator const AER::Operations::Op &())) {
       if (!end_block_inserted) {
-        if (is_diagonal_op(ops[i]) || can_block(ops[i], blockedQubits)) {
-          if (can_reorder(ops[i], queue)) {
+        if (is_diagonal_op(ops[i].operator const AER::Operations::Op &()) || can_block(ops[i].operator const AER::Operations::Op &(), blockedQubits)) {
+          if (can_reorder(ops[i].operator const AER::Operations::Op &(), queue)) {
             // mapping swapped qubits
             for (iq = 0; iq < ops[i]->qubits.size(); iq++) {
-              static_cast<Operations::Op>(ops[i]).qubits[iq] = qubitMap_[ops[i]->qubits[iq]];
+              static_cast<Operations::Op&>(ops[i]).qubits[iq] = qubitMap_[static_cast<Operations::Op&>(ops[i]).qubits[iq]];
             }
             out.push_back(ops[i]);
             num_gates_added++;
             continue;
           }
         } else if (ops[i]->name == "pauli") {
-          if (can_reorder(ops[i], queue)) {
-            if (split_pauli(ops[i], blockedQubits, out, queue))
+          if (can_reorder(ops[i].operator const AER::Operations::Op &(), queue)) {
+            if (split_pauli(ops[i].operator const AER::Operations::Op &(), blockedQubits, out, queue))
               num_gates_added++;
             continue;
           }
         } else if (ops[i]->type ==
                    Operations::OpType::reset) { // reset for density matrix can
                                                 // be cache blocked
-          if (can_reorder(ops[i], queue)) {
-            if (split_op(ops[i], blockedQubits, out, queue))
+          if (can_reorder(ops[i].operator const AER::Operations::Op &(), queue)) {
+            if (split_op(ops[i].operator const AER::Operations::Op &(), blockedQubits, out, queue))
               num_gates_added++;
             continue;
           }
@@ -644,7 +644,7 @@ uint_t CacheBlocking::add_ops(Operations::opVector &ops,
                 "smaller than chunk qubit size");
             break;
           }
-          if (!can_block(ops[i],
+          if (!can_block(ops[i].operator const AER::Operations::Op &(),
                          blockedQubits)) { // if some qubits are out of chunk,
                                            // queued for next step
             queue.push_back(ops[i]);
@@ -652,7 +652,7 @@ uint_t CacheBlocking::add_ops(Operations::opVector &ops,
           }
         } else if (ops[i]->type == Operations::OpType::initialize) {
           if (ops[i]->qubits.size() <= block_bits_) {
-            if (!can_block(ops[i],
+            if (!can_block(ops[i].operator const AER::Operations::Op &(),
                            blockedQubits)) { // if some qubits are out of chunk,
                                              // queued for next step
               queue.push_back(ops[i]);

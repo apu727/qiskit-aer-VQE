@@ -37,8 +37,8 @@ public:
   virtual op_t generate_operation(std::vector<op_t> &fusioned_ops,
                                   bool diagonal = false) const {
     std::set<uint_t> fusioned_qubits;
-    for (const Operations::Op &op : fusioned_ops)
-      fusioned_qubits.insert(op.qubits.begin(), op.qubits.end());
+    for (const auto &op : fusioned_ops)
+      fusioned_qubits.insert(op->qubits.begin(), op->qubits.end());
 
     reg_t remapped2orig(fusioned_qubits.begin(), fusioned_qubits.end());
     std::unordered_map<uint_t, uint_t> orig2remapped;

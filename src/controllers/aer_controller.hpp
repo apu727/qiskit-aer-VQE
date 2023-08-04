@@ -1765,9 +1765,9 @@ void Controller::measure_sampler(InputIterator first_meas,
 
   // Get measured qubits from circuit sort and delete duplicates
   std::vector<uint_t> meas_qubits; // measured qubits
-  for (const Operations::Op &op : meas_ops) {
-    for (size_t j = 0; j < op.qubits.size(); ++j)
-      meas_qubits.push_back(op.qubits[j]);
+  for (const auto& op : meas_ops) {
+    for (size_t j = 0; j < op->qubits.size(); ++j)
+      meas_qubits.push_back(op->qubits[j]);
   }
   sort(meas_qubits.begin(), meas_qubits.end());
   meas_qubits.erase(unique(meas_qubits.begin(), meas_qubits.end()),
@@ -1795,13 +1795,13 @@ void Controller::measure_sampler(InputIterator first_meas,
   // Maps of memory and register to qubit position
   std::map<uint_t, uint_t> memory_map;
   std::map<uint_t, uint_t> register_map;
-  for (const Operations::Op &op : meas_ops) {
-    for (size_t j = 0; j < op.qubits.size(); ++j) {
-      auto pos = qubit_map[op.qubits[j]];
-      if (!op.memory.empty())
-        memory_map[op.memory[j]] = pos;
-      if (!op.registers.empty())
-        register_map[op.registers[j]] = pos;
+  for (const auto& op : meas_ops) {
+    for (size_t j = 0; j < op->qubits.size(); ++j) {
+      auto pos = qubit_map[op->qubits[j]];
+      if (!op->memory.empty())
+        memory_map[op->memory[j]] = pos;
+      if (!op->registers.empty())
+        register_map[op->registers[j]] = pos;
     }
   }
 
@@ -1827,7 +1827,7 @@ void Controller::measure_sampler(InputIterator first_meas,
     }
 
     // process read out errors for memory and registers
-    for (const Operations::Op &roerror : roerror_ops) {
+    for (const auto& roerror : roerror_ops) {
       creg.apply_roerror(roerror, rng);
     }
 

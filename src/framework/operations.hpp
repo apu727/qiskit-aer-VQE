@@ -340,6 +340,8 @@ class sharedT
     }
 
     operator const T&() const { return *m_data; }
+    //cast to consts version to call cast operator on const object
+    operator const T&() { return static_cast<const sharedT<T>&>(*this).operator const T &();}
 
     operator T&() {
       detachIfNeeded();
