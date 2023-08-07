@@ -2848,24 +2848,24 @@ void QubitVectorThrust<data_t>::apply_batched_pauli_ops(
     uint_t z_mask = 0;
 
     for (j = 0; j < ops[i].size(); j++) {
-      if (ops[i][j].conditional)
-        set_conditional(ops[i][j].conditional_reg);
+      if (ops[i][j]->conditional)
+        set_conditional(ops[i][j]->conditional_reg);
 
-      if (ops[i][j].name == "x") {
-        x_mask ^= (1ull << ops[i][j].qubits[0]);
-        x_max = std::max<uint_t>(x_max, (ops[i][j].qubits[0]));
-      } else if (ops[i][j].name == "z") {
-        z_mask ^= (1ull << ops[i][j].qubits[0]);
-      } else if (ops[i][j].name == "y") {
-        x_mask ^= (1ull << ops[i][j].qubits[0]);
-        z_mask ^= (1ull << ops[i][j].qubits[0]);
-        x_max = std::max<uint_t>(x_max, (ops[i][j].qubits[0]));
+      if (ops[i][j]->name == "x") {
+        x_mask ^= (1ull << ops[i][j]->qubits[0]);
+        x_max = std::max<uint_t>(x_max, (ops[i][j]->qubits[0]));
+      } else if (ops[i][j]->name == "z") {
+        z_mask ^= (1ull << ops[i][j]->qubits[0]);
+      } else if (ops[i][j]->name == "y") {
+        x_mask ^= (1ull << ops[i][j]->qubits[0]);
+        z_mask ^= (1ull << ops[i][j]->qubits[0]);
+        x_max = std::max<uint_t>(x_max, (ops[i][j]->qubits[0]));
         num_y++;
-      } else if (ops[i][j].name == "pauli") {
+      } else if (ops[i][j]->name == "pauli") {
         uint_t pauli_x_mask = 0, pauli_z_mask = 0, pauli_num_y = 0,
                pauli_x_max = 0;
         std::tie(pauli_x_mask, pauli_z_mask, pauli_num_y, pauli_x_max) =
-            pauli_masks_and_phase(ops[i][j].qubits, ops[i][j].string_params[0]);
+            pauli_masks_and_phase(ops[i][j]->qubits, ops[i][j]->string_params[0]);
 
         x_mask ^= pauli_x_mask;
         z_mask ^= pauli_z_mask;
